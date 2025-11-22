@@ -5,7 +5,8 @@
 - npm đi kèm với bộ cài Node.js
 
 ## Cài đặt phụ thuộc
-1. Mở terminal tại thư mục dự án `24127378`.
+1. Mở terminal tại thư mục dự án `24127378_Vietnam_POI`.
+2. Thêm file `.env` được gửi vào trong thư mục dự án.
 2. Chạy lệnh `npm install` để cài đặt các package cần thiết.
 
 ## Chạy ở chế độ phát triển
@@ -22,19 +23,3 @@
 
 ## Ghi chú
 - Dự án sử dụng React kết hợp Leaflet thông qua Vite. Đảm bảo kết nối Internet khi phát triển để tải bản đồ nếu cần.
-
-## Cấu hình Firebase
-1. Tạo dự án trên [Firebase Console](https://console.firebase.google.com/) và bật Email/Password Authentication.
-2. Lấy thông tin cấu hình Web App (`apiKey`, `authDomain`, `projectId`, ...).
-3. Tại thư mục gốc, tạo file `.env` (hoặc `.env.local`) với nội dung:
-
-```
-VITE_FIREBASE_API_KEY=your_api_key
-VITE_FIREBASE_AUTH_DOMAIN=your_auth_domain
-VITE_FIREBASE_PROJECT_ID=your_project_id
-VITE_FIREBASE_STORAGE_BUCKET=your_storage_bucket
-VITE_FIREBASE_MESSAGING_SENDER_ID=your_messaging_sender_id
-VITE_FIREBASE_APP_ID=your_app_id
-```
-
-4. Khởi động lại server Vite sau khi thêm biến môi trường.
