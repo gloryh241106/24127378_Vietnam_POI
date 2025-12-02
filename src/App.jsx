@@ -10,7 +10,15 @@ import './App.css';
 const NOMINATIM_ENDPOINT = 'https://nominatim.openstreetmap.org/search';
 const OVERPASS_ENDPOINT = 'https://overpass-api.de/api/interpreter';
 const WEATHER_ENDPOINT = 'https://api.open-meteo.com/v1/forecast';
-const GOOGLE_TRANSLATE_ENDPOINT = 'https://translate.googleapis.com/translate_a/single';
+const normalizeBaseUrl = (rawUrl) => {
+	if (typeof rawUrl !== 'string') {
+		return '';
+	}
+	return rawUrl.endsWith('/') ? rawUrl.slice(0, -1) : rawUrl;
+};
+
+const TRANSLATION_API_BASE_URL = normalizeBaseUrl(import.meta.env.VITE_TRANSLATION_API_BASE_URL);
+const TRANSLATION_ENDPOINT = TRANSLATION_API_BASE_URL ? `${TRANSLATION_API_BASE_URL}/translate` : '';
 
 const haversineDistance = (lat1, lon1, lat2, lon2) => {
 	const toRad = (value) => (value * Math.PI) / 180;
@@ -268,42 +276,51 @@ function App() {
 			setTranslationResult('');
 			return;
 		}
+		if (!TRANSLATION_ENDPOINT) {
+			setTranslationError('Translation service is not configured. Please set VITE_TRANSLATION_API_BASE_URL.');
+			setTranslationResult('');
+			return;
+		}
 
 		setIsTranslating(true);
 		setTranslationError('');
 		setTranslationResult('');
 
 		try {
-				const url = new URL(GOOGLE_TRANSLATE_ENDPOINT);
-				url.search = new URLSearchParams({
-					client: 'gtx',
-					sl: 'en',
-					tl: 'vi',
-					dt: 't',
-					q: trimmed,
-				}).toString();
-				const response = await fetch(url.toString(), {
+				const response = await fetch(TRANSLATION_ENDPOINT, {
+					method: 'POST',
 					headers: {
+						'Content-Type': 'application/json',
 						Accept: 'application/json',
 					},
+					body: JSON.stringify({
+						text: trimmed,
+						source_lang: 'en',
+						target_lang: 'vi',
+					}),
 				});
 
 			if (!response.ok) {
-					throw new Error(`Google Translate service returned status ${response.status}.`);
+					const fallback = `Translation service returned status ${response.status}.`;
+					const errorText = await response.text();
+					let detail = '';
+					try {
+						const parsed = JSON.parse(errorText || '{}');
+						if (typeof parsed?.detail === 'string') {
+							detail = parsed.detail;
+						} else if (typeof parsed?.error === 'string') {
+							detail = parsed.error;
+						}
+					} catch {
+						/* ignore malformed payloads */
+					}
+					throw new Error(detail || fallback);
 			}
 
 				const data = await response.json();
-				let translatedText = '';
-				if (Array.isArray(data) && Array.isArray(data[0])) {
-					translatedText = data[0]
-						.filter((segment) => Array.isArray(segment) && typeof segment[0] === 'string')
-						.map((segment) => segment[0])
-						.join(' ')
-						.trim();
-				}
-
+				const translatedText = typeof data?.translated_text === 'string' ? data.translated_text.trim() : '';
 			if (!translatedText) {
-					throw new Error('Google Translate service did not return any translated text.');
+					throw new Error('Translation service did not return any translated text.');
 			}
 
 				setTranslationResult(translatedText);
@@ -396,7 +413,7 @@ function App() {
 				</div>
 			</main>
 			<footer className="app__footer">
-			<small>Powered by OpenStreetMap, Overpass API, and Google Translate.</small>
+			<small>Powered by OpenStreetMap, Overpass API, and HuggingFace translation.</small>
 			</footer>
 			<button
 				type="button"
